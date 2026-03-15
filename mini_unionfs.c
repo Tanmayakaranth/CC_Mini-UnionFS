@@ -1,3 +1,4 @@
+#include <dirent.h>
 #define FUSE_USE_VERSION 31
 
 #include <fuse3/fuse.h>
@@ -104,7 +105,90 @@ static int unionfs_getattr(const char *path, struct stat *stbuf,
 
 static struct fuse_operations unionfs_oper = {
     .getattr = unionfs_getattr,
+    .readdir = unionfs_readdir,
+    .read = unionfs_read,
 };
+
+static int unionfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+                           off_t offset, struct fuse_file_info *fi,
+                           enum fuse_readdir_flags flags)
+{
+    (void) offset;
+    (void) fi;
+    (void) flags;
+
+    struct mini_unionfs_state *state = UNIONFS_DATA;
+
+    char upper_path[PATH_MAX];
+    char lower_path[PATH_MAX];
+
+    build_path(upper_path, state->upper_dir, path);
+    build_path(lower_path, state->lower_dir, path);
+
+    DIR *dp;
+    struct dirent *de;
+
+    filler(buf, ".", NULL, 0, 0);
+    filler(buf, "..", NULL, 0, 0);
+
+    dp = opendir(upper_path);
+    if (dp) {
+        while ((de = readdir(dp)) != NULL) {
+
+            if (strncmp(de->d_name, ".wh.", 4) == 0)
+                continue;
+
+            filler(buf, de->d_name, NULL, 0, 0);
+        }
+        closedir(dp);
+    }
+
+    dp = opendir(lower_path);
+    if (dp) {
+        while ((de = readdir(dp)) != NULL) {
+
+            char whiteout[PATH_MAX];
+            sprintf(whiteout, "%s/.wh.%s", upper_path, de->d_name);
+
+            struct stat st;
+
+            if (lstat(whiteout, &st) == 0)
+                continue;
+
+            filler(buf, de->d_name, NULL, 0, 0);
+        }
+        closedir(dp);
+    }
+
+    return 0;
+}
+
+static int unionfs_read(const char *path, char *buf, size_t size,
+                        off_t offset, struct fuse_file_info *fi)
+{
+    (void) fi;
+
+    char resolved[PATH_MAX];
+    int res = resolve_path(path, resolved);
+
+    if (res < 0)
+        return res;
+
+    FILE *fp = fopen(resolved, "rb");
+
+    if (!fp)
+        return -errno;
+
+    fseek(fp, offset, SEEK_SET);
+
+    size_t bytes = fread(buf, 1, size, fp);
+
+    fclose(fp);
+
+    return bytes;
+}
+
+
 
 int main(int argc, char *argv[])
 {
