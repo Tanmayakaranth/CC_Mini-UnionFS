@@ -103,12 +103,6 @@ static int unionfs_getattr(const char *path, struct stat *stbuf,
     return 0;
 }
 
-static struct fuse_operations unionfs_oper = {
-    .getattr = unionfs_getattr,
-    .readdir = unionfs_readdir,
-    .read = unionfs_read,
-};
-
 static int unionfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                            off_t offset, struct fuse_file_info *fi,
                            enum fuse_readdir_flags flags)
@@ -188,6 +182,12 @@ static int unionfs_read(const char *path, char *buf, size_t size,
     return bytes;
 }
 
+
+static struct fuse_operations unionfs_oper = {
+    .getattr = unionfs_getattr,
+    .readdir = unionfs_readdir,
+    .read = unionfs_read,
+};
 
 
 int main(int argc, char *argv[])
