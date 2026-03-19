@@ -10,6 +10,11 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
+int unionfs_open(const char *, struct fuse_file_info *);
+int unionfs_write(const char *, const char *, size_t, off_t, struct fuse_file_info *);
+int unionfs_create(const char *, mode_t, struct fuse_file_info *);
+int unionfs_mkdir(const char *, mode_t);
+
 struct mini_unionfs_state {
     char *lower_dir;
     char *upper_dir;
@@ -34,7 +39,7 @@ void build_whiteout_path(char *dest, const char *upper, const char *path)
     char *filename = strrchr(path, '/');
 
     if (filename)
-        sprintf(dest, "%s/.wh.%s", upper, filename + 1);
+        snprintf(dest, PATH_MAX, "%s/.wh.%s", upper, filename + 1);
 }
 
 //to check if a file exists
@@ -142,7 +147,7 @@ static int unionfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         while ((de = readdir(dp)) != NULL) {
 
             char whiteout[PATH_MAX];
-            sprintf(whiteout, "%s/.wh.%s", upper_path, de->d_name);
+            snprintf(whiteout, PATH_MAX, "%s/.wh.%s", upper_path, de->d_name);
 
             struct stat st;
 
@@ -187,6 +192,12 @@ static struct fuse_operations unionfs_oper = {
     .getattr = unionfs_getattr,
     .readdir = unionfs_readdir,
     .read = unionfs_read,
+
+    .open = unionfs_open,
+    .write = unionfs_write,
+    .create = unionfs_create,
+    .mkdir = unionfs_mkdir,
+
 };
 
 
