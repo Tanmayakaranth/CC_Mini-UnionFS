@@ -14,6 +14,8 @@ int unionfs_open(const char *, struct fuse_file_info *);
 int unionfs_write(const char *, const char *, size_t, off_t, struct fuse_file_info *);
 int unionfs_create(const char *, mode_t, struct fuse_file_info *);
 int unionfs_mkdir(const char *, mode_t);
+int unionfs_unlink(const char *);
+int unionfs_rmdir(const char *);
 
 struct mini_unionfs_state {
     char *lower_dir;
@@ -197,7 +199,8 @@ static struct fuse_operations unionfs_oper = {
     .write = unionfs_write,
     .create = unionfs_create,
     .mkdir = unionfs_mkdir,
-
+    .unlink = unionfs_unlink,
+    .rmdir = unionfs_rmdir
 };
 
 

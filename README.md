@@ -32,6 +32,8 @@ sudo apt-get install libfuse3-dev fuse3 build-essential
 
 ```
 .
+├── tests/test_unionfs.c
+├── delete_ops.c
 ├── mini_unionfs.c       # Core FUSE implementation (read operations)
 ├── write_ops.c          # Write operations (CoW, create, mkdir, unlink)
 ├── Makefile             # Build configuration
